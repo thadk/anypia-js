@@ -28,6 +28,18 @@ if(CMAKE_SYSTEM_NAME STREQUAL Emscripten)
         set(CMAKE_FIND_LIBRARY_SUFFIXES .lib)
     endif()
 
+    #use extern's for C / javascript
+    add_compile_definitions("WEB_ASSEMBLY")
+
+    set(EXPORTED_FUNCTIONS "-s EXPORTED_FUNCTIONS=\"[\
+	'_GetAge',\
+	'_GetCalc',\
+	'_GetYears',\
+    '_InitalizeApplication']\"")
+    
+    set(EXPORTED_RUNTIME_METHODS "-s EXTRA_EXPORTED_RUNTIME_METHODS=\"['ccall', 'cwrap']\"")
+    set(EXCEPTION_CATCHING "-s DISABLE_EXCEPTION_CATCHING=0")
+    set (CMAKE_EXE_LINKER_FLAGS "${EXPORTED_FUNCTIONS} ${EXPORTED_RUNTIME_METHODS} ${EXCEPTION_CATCHING}")
     # Create .html launcher as well
     set(CMAKE_EXECUTABLE_SUFFIX ".html")
 endif()
@@ -52,24 +64,6 @@ endif()
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 
-set(EXPORTED_FUNCTIONS "-s EXPORTED_FUNCTIONS=\"[\
-	'_GetAge',\
-	'_GetCalc',\
-	'_GetYears',\
-	'_InitalizeApplication']\"")
-	
-set(EXPORTED_RUNTIME_METHODS "-s EXTRA_EXPORTED_RUNTIME_METHODS=\"['ccall', 'cwrap']\"")
-
-add_compile_definitions("WEB_ASSEMBLY")
-
-set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS " ${EXPORTED_FUNCTIONS} ${EXPORTED_RUNTIME_METHODS}")
-#set(EMCC_CFLAGS "${EMCC_CFLAGS} ")
-#set(EMCC_CFLAGS "${EMCC_CFLAGS} -s EXTRA_EXPORTED_RUNTIME_METHODS=['ccall']")
-
-
-#if(NOT DEFINED ANYPIATEST)
-#    add_compile_definitions("ANYPIAB")
-#endif(NOT DEFINED ANYPIATEST)
 # On Linux, the order of these libraries matters!
 target_link_libraries(${PROJECT_NAME} PUBLIC
     piadata
