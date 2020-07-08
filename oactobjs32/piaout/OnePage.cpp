@@ -15,6 +15,9 @@
 #include "PiaCalAny.h"
 #include "wrkrdata.h"
 #include "PiadataArray.h"
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/optional.hpp>
 
 using namespace std;
 
@@ -34,6 +37,7 @@ OnePage::~OnePage()
 /// <summary>Prepares strings for 1-page summary.</summary>
 void OnePage::prepareStrings()
 {
+  boost::property_tree::ptree pt;
   int firstyr;  // first year to print out
   int lastyr;  // last year to print out
   try {
@@ -64,20 +68,26 @@ void OnePage::prepareStrings()
     strm.str("");
     strm << "                                               "
       << DateFormatter::toString(boost::gregorian::day_clock::local_day());
+    pt.put("reportDate", DateFormatter::toString(boost::gregorian::day_clock::local_day()));
     outputString.push_back(strm.str());
     printNameSsn(workerData);
     string s = "Worker date of birth: ";
     s +=  DateFormatter::toString(workerData.getBirthDate());
+
+    pt.put("birthDate",DateFormatter::toString(workerData.getBirthDate()));
+
     outputString.push_back(s);
     if (workerData.getJoasdi() == WorkerDataGeneral::SURVIVOR) {
       s = "Worker date of death: ";
       s +=  DateFormatter::toString(workerData.getDeathDate());
       outputString.push_back(s);
+      pt.put("deathDate", DateFormatter::toString(workerData.getDeathDate()));
     }
     if (workerData.getJoasdi() == WorkerDataGeneral::DISABILITY) {
       s = "Disability onset date: ";
       s += DateFormatter::toString(workerData.disabPeriod[0].getOnsetDate());
       outputString.push_back(s);
+      pt.put("disabilityOnsetDate", DateFormatter::toString(workerData.disabPeriod[0].getOnsetDate()));
     }
     outputString.push_back("");
     outputString.push_back("");
@@ -92,6 +102,7 @@ void OnePage::prepareStrings()
       strm.str("");
       strm << "50 " << setw(10) << earnTotal50;
       outputString.push_back(strm.str());
+      //pt.put("earnNoTotalization1951", outputString);
       firstyr = 1951;
     }
     else {
@@ -99,6 +110,8 @@ void OnePage::prepareStrings()
         5 * ((workerData.getIbegin() - 1) / 5) + 1 : 1951;
     }
     lastyr = 5 * ((workerData.getIend() - 1) / 5) + 5;
+    pt.put("firstYr", firstyr);
+    pt.put("lastYr", lastyr);
     printEarn(firstyr, lastyr, 0);
     if ((piaCal.piaTable != (PiaTable*)0 && piaCal.piaTable->getApplicable())
       || (piaCal.transGuar != (TransGuar*)0 &&
@@ -109,6 +122,7 @@ void OnePage::prepareStrings()
       if (piaCal.piaTable != (PiaTable*)0 &&
         piaCal.piaTable->getApplicable() > 0) {
         strm << setw(10) << piaCal.piaTable->getftearn();
+        
       }
       else {
         strm << setw(10) << piaCal.transGuar->getftearn();
@@ -153,6 +167,8 @@ void OnePage::prepareStrings()
     else {
       strm << "          ";
     }
+              boost::property_tree::json_parser::write_json(strm, pt);
+
     strm.precision(2);
     strm << setw(10) << piaData.highPia.get() << asterisk;
     strm << setw(12) << setprecision(5) << piaData.getArf();
@@ -162,6 +178,7 @@ void OnePage::prepareStrings()
     }
     outputString.push_back(strm.str());
     outputString.push_back("");
+
     // print footnotes
     if (asterisk[0] == '*') {
       strm.str("");
@@ -230,6 +247,7 @@ void OnePage::prepareStrings()
   } catch (PiaException&) {
     throw PiaException(PIA_IDS_ONEPAGE);
   }
+
 }
 
 /// <summary>Prepares table of earnings.</summary>
